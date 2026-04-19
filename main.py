@@ -16,6 +16,7 @@ CYAN = "\033[36m"
 GREEN = "\033[32m"
 YELLOW = "\033[33m"
 RED = "\033[31m"
+PURPLE = "\033[35m"
 RESET = "\033[0m"
 
 # Patterns that indicate the node/launcher is finished
@@ -85,6 +86,21 @@ class ROS2Debugger:
         # 3. Detect Crash/Death
         if 'process has died' in clean_line or 'process has finished' in clean_line:
             self.exit_detected = True
+    
+    def shorten_ros_line(self, line):
+        # If it's the long "process has died" line
+        if 'process has died' in line and len(line) > 200:
+            # Regex to find the start and end, skipping the /tmp/ param files
+            # Group 1: Everything up to the start of --params-file
+            # Group 2: The very last remapping argument
+            match = re.search(r'^(.*process has died.*?cmd \'.*?\s).*(--params-file.*)?(-r.*\'\])$', line)
+            
+            if match:
+                start_part = match.group(1)
+                end_part = match.group(3)
+                return f"{start_part} {PURPLE}... [TRUNCATED {line.count('--params-file')} PARAMS] ...{RESET} {end_part}"
+                
+        return line
 
     def print_report(self, timed_out, return_code):
         print(f"\n{CYAN}" + "="*60)
@@ -99,7 +115,7 @@ class ROS2Debugger:
         if self.exit_detected:
             print(f"\n{RED}[!] CRASH CONTEXT (Last lines before failure):{RESET}")
             for l in self.output_history:
-                print(f"    >>> {l}")
+                print(f"    >>> {self.shorten_ros_line(l)}")
 
         print(f"\n[STDOUT/STDERR] Errors: {len(self.errors)} | Warnings: {len(self.warnings)}")
         
