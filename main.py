@@ -70,7 +70,7 @@ class ROS2Debugger:
         if self.possible_root_causes:
             print("\n[!] IDENTIFIED ROOT CAUSES:")
             for i, cause in enumerate(set(self.possible_root_causes)): # Unique items
-                print(f"{i}   - {cause}\n")
+                print(f"{i+1}   - {cause}\n")
         
         if self.exit_detected:
             print("\n[!] CRASH CONTEXT (Last lines before failure):")
@@ -86,9 +86,14 @@ class ROS2Debugger:
 
 def read_output(proc, debugger):
     last_line = ""
+    max_width = 120  # Maximum line width to display
     for line in iter(proc.stdout.readline, ''):
         last_line = line.strip()
-        print(f"\r{last_line}", end="", flush=True)
+        if len(last_line) > max_width:
+            last_line = last_line[:max_width]
+        # Pad with spaces to clear any leftover characters from longer previous lines
+        padded_line = last_line.ljust(max_width)
+        print(f"\r{padded_line}", end="", flush=True)
         debugger.analyze_line(line)
     print()  # Final newline after the loop ends
 
