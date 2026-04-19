@@ -112,7 +112,19 @@ def main():
         elif 'Exception' in line:
             errors.append(line.strip())
 
-    proc.wait()
+    # Terminate the process if we timed out
+    if timed_out:
+        print("\n[INFO] Terminating the process...")
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait()
+
+    # Only wait if not already terminated
+    if not timed_out:
+        proc.wait()
 
     print("\n" + "="*50)
     print("Debug report")
