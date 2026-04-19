@@ -134,7 +134,7 @@ class ROS2Debugger:
         
         print("="*60 + "\n")
 
-def read_output(proc, debugger, last_output_time_ref, timer_info):
+def read_output(proc, debugger, last_output_time_ref):
     last_line = ""
     max_width = 120  # Maximum line width to display
     for line in iter(proc.stdout.readline, ''):
@@ -143,9 +143,7 @@ def read_output(proc, debugger, last_output_time_ref, timer_info):
             last_line = last_line[:max_width]
         # Pad with spaces to clear any leftover characters from longer previous lines
         padded_line = last_line.ljust(max_width)
-        # Move to line 1, print last line, move to line 2, print timer, move back to line 1
-        timer_text = timer_info[0]
-        print(f"\r{padded_line}\n{timer_text}\x1b[1A", end="", flush=True)
+        print(f"\r{padded_line}", end="", flush=True)
         debugger.analyze_line(line)
         last_output_time_ref[0] = time.time()  # Update last output time
     print()  # Final newline after the loop ends
@@ -169,12 +167,12 @@ def main():
     )
 
     last_output_time_ref = [time.time()]
-    timer_info = [""]
-    thread = threading.Thread(target=read_output, args=(proc, debugger, last_output_time_ref, timer_info), daemon=True)
+    thread = threading.Thread(target=read_output, args=(proc, debugger, last_output_time_ref), daemon=True)
     thread.start()
 
     last_displayed_second = -1
     timed_out = False
+    last_printed_timer = ""
     
     try:
         while proc.poll() is None:
@@ -182,10 +180,15 @@ def main():
             remaining = int(TIMEOUT_SECONDS - elapsed)
             
             if remaining <= (TIMEOUT_SECONDS - 5) and remaining != last_displayed_second and remaining >= 0:
-                timer_info[0] = f"timing out in {remaining} seconds"
+                current_timer = f"timing out in {remaining} seconds"
                 last_displayed_second = remaining
-            elif remaining > (TIMEOUT_SECONDS - 5):
-                timer_info[0] = ""
+            else:
+                current_timer = ""
+            
+            # Print timer on its own line if it changed
+            if current_timer != last_printed_timer:
+                print(f"\n{current_timer}")
+                last_printed_timer = current_timer
             
             if remaining <= 0:
                 print("\nTimeout reached. Terminating process.")
