@@ -88,18 +88,25 @@ class ROS2Debugger:
             self.exit_detected = True
     
     def shorten_ros_line(self, line):
-        # If it's the long "process has died" line
-        if 'process has died' in line and len(line) > 20:
-            # Regex to find the start and end, skipping the /tmp/ param files
-            # Group 1: Everything up to the start of --params-file
-            # Group 2: The very last remapping argument
-            match = re.search(r'^(.*process has died.*?cmd \'.*?\s).*(--params-file.*)?(-r.*\'\])$', line)
-            
-            if match:
-                start_part = match.group(1)
-                end_part = match.group(3)
-                return f"{start_part} {PURPLE}... [TRUNCATED {line.count('--params-file')} PARAMS] ...{RESET} {end_part}"
+        if 'process has died' in line and len(line) > 200:
+            # Look for the start of the command and the end remappings
+            # We look for the first instance of --params-file to cut it off
+            try:
+                # Keep up to the start of parameters
+                start_marker = line.find('--params-file')
+                # Keep from the last remapping
+                end_marker = line.rfind('-r /')
                 
+                if start_marker != -1 and end_marker != -1:
+                    header = line[:start_marker]
+                    footer = line[end_marker:]
+                    count = line.count('--params-file')
+                    return f"{header} {PURPLE}... [TRUNCATED {count} PARAMS] ...{RESET} {footer}"
+            except Exception:
+                pass # Fall back to basic truncation if logic fails
+                
+            return line[:150] + f" {PURPLE}... [TRUNCATED SOME PARAMS] ...{RESET}"
+            
         return line
 
     def print_report(self, timed_out, return_code):
