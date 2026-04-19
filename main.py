@@ -89,7 +89,7 @@ class ROS2Debugger:
     
     def shorten_ros_line(self, line):
         # If it's the long "process has died" line
-        if 'process has died' in line and len(line) > 200:
+        if 'process has died' in line and len(line) > 20:
             # Regex to find the start and end, skipping the /tmp/ param files
             # Group 1: Everything up to the start of --params-file
             # Group 2: The very last remapping argument
