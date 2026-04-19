@@ -138,19 +138,16 @@ def main():
     thread = threading.Thread(target=read_output, args=(proc, debugger, last_output_time_ref), daemon=True)
     thread.start()
 
-    timeout_seconds = 20
-    warning_displayed = False
+    last_displayed_second = -1
     
     try:
         while proc.poll() is None:
             elapsed = time.time() - last_output_time_ref[0]
-            remaining = int(timeout_seconds - elapsed)
+            remaining = int(TIMEOUT_SECONDS - elapsed)
             
-            if remaining <= 5 and not warning_displayed:
+            if remaining <= (TIMEOUT_SECONDS - 5) and remaining != last_displayed_second and remaining >= 0:
                 print(f"\rtiming out in {remaining} seconds", end="", flush=True)
-                warning_displayed = True
-            elif remaining > 5:
-                warning_displayed = False
+                last_displayed_second = remaining
             
             time.sleep(0.5)
     except KeyboardInterrupt:
