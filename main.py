@@ -81,17 +81,17 @@ class ROS2Debugger:
             self.exit_detected = True
 
     def print_report(self, timed_out, return_code):
-        print("\n\e36m" + "="*60)
+        print("\n\e[36m" + "="*60)
         print("DIAGNOSTIC SUMMARY")
-        print("="*60 + "\e0m")
+        print("="*60 + "\e[0m")
 
         if self.possible_root_causes:
-            print("\n\e32m[!] IDENTIFIED ROOT CAUSES:\e0m")
+            print("\n\e[32m[!] IDENTIFIED ROOT CAUSES:\e[0m")
             for i, cause in enumerate(set(self.possible_root_causes)): # Unique items
                 print(f"{i+1}   - {cause}\n")
         
         if self.exit_detected:
-            print("\n\e31m[!] CRASH CONTEXT (Last lines before failure):\e0m")
+            print("\n\e[31m[!] CRASH CONTEXT (Last lines before failure):\e[0m")
             for l in self.output_history:
                 print(f"    >>> {l}")
 
@@ -102,7 +102,7 @@ class ROS2Debugger:
         
         print("="*60 + "\n")
 
-def read_output(proc, debugger):
+def read_output(proc, debugger, last_output_time_ref):
     last_line = ""
     max_width = 120  # Maximum line width to display
     for line in iter(proc.stdout.readline, ''):
@@ -113,6 +113,7 @@ def read_output(proc, debugger):
         padded_line = last_line.ljust(max_width)
         print(f"\r{padded_line}", end="", flush=True)
         debugger.analyze_line(line)
+        last_output_time_ref[0] = time.time()  # Update last output time
     print()  # Final newline after the loop ends
 
 def main():
@@ -133,15 +134,24 @@ def main():
         bufsize=1
     )
 
-    thread = threading.Thread(target=read_output, args=(proc, debugger), daemon=True)
+    last_output_time_ref = [time.time()]
+    thread = threading.Thread(target=read_output, args=(proc, debugger, last_output_time_ref), daemon=True)
     thread.start()
 
-    last_output_time = time.time()
+    timeout_seconds = 20
+    warning_displayed = False
     
     try:
         while proc.poll() is None:
-            # Check if we should timeout (if no logs are flowing)
-            # You can implement more complex timeout logic here if needed
+            elapsed = time.time() - last_output_time_ref[0]
+            remaining = int(timeout_seconds - elapsed)
+            
+            if remaining <= 5 and not warning_displayed:
+                print(f"\rtiming out in {remaining} seconds", end="", flush=True)
+                warning_displayed = True
+            elif remaining > 5:
+                warning_displayed = False
+            
             time.sleep(0.5)
     except KeyboardInterrupt:
         proc.terminate()
