@@ -46,13 +46,25 @@ def main():
         
         # Check for timeout (no output for TIMEOUT_SECONDS)
         current_time = time.time()
-        if current_time - last_output_time > TIMEOUT_SECONDS:
+        time_since_last = current_time - last_output_time
+        
+        # Show countdown when idle
+        if time_since_last > 5 and not line:
+            remaining = TIMEOUT_SECONDS - int(time_since_last)
+            if remaining > 0:
+                print(f"\r[WAITING] Timeout in {remaining}s...", end='', flush=True)
+        
+        if time_since_last > TIMEOUT_SECONDS:
             print(f"\n[WARNING] No output for {TIMEOUT_SECONDS} seconds - possible loop or stuck process")
             timed_out = True
             break
         
         if not line:
             break
+        
+        # Clear the countdown line when we get output
+        if time_since_last > 5:
+            print()  # New line after countdown
         
         last_output_time = current_time
         output_lines.append(line.strip())
