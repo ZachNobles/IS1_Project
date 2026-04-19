@@ -12,10 +12,11 @@ from collections import deque
 TIMEOUT_SECONDS = 20
 CONTEXT_SIZE = 10  # Number of lines to keep before a crash
 
-CYAN = "\033[36m"
-GREEN = "\033[32m"
-YELLOW = "\033[33m"
 RED = "\033[31m"
+YELLOW = "\033[33m"
+GREEN = "\033[32m"
+CYAN = "\033[36m"
+BLUE = "\033[34m"
 PURPLE = "\033[35m"
 RESET = "\033[0m"
 
@@ -73,15 +74,13 @@ class ROS2Debugger:
             if re.search(pattern, clean_line):
                 # Don't add noisy warnings to the root cause list
                 if "NOISE" not in description:
-                    self.possible_root_causes.append(f"{description} -> '{clean_line}'")
+                    self.possible_root_causes.append(f"{description} -> '{self.shorten_ros_line(clean_line)}'")
 
         # 2. Categorize Logs
         if '[ERROR]' in clean_line or 'ERROR:' in clean_line:
             self.errors.append(clean_line)
         elif '[WARN]' in clean_line or 'Warning:' in clean_line:
-            # Filter out the specific noise you saw in your log
-            if 'namespace collision' not in clean_line:
-                self.warnings.append(clean_line)
+            self.warnings.append(clean_line)
 
         # 3. Detect Crash/Death
         if 'process has died' in clean_line or 'process has finished' in clean_line:
@@ -101,11 +100,11 @@ class ROS2Debugger:
                     header = line[:start_marker]
                     footer = line[end_marker:]
                     count = line.count('--params-file')
-                    return f"{header} {PURPLE}... [TRUNCATED {count} PARAMS] ...{RESET} {footer}"
+                    return f"{header} {BLUE}... [TRUNCATED {count} PARAMS] ...{RESET} {footer}"
             except Exception:
                 pass # Fall back to basic truncation if logic fails
                 
-            return line[:150] + f" {PURPLE}... [TRUNCATED SOME PARAMS] ...{RESET}"
+            return line[:150] + f" {BLUE}... [TRUNCATED SOME PARAMS] ...{RESET}"
             
         return line
 
