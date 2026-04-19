@@ -25,7 +25,7 @@ ROOT_CAUSE_MAP = {
     r'exit code -6': 'CRASH: Abort signal (likely an assertion failure).',
     r'ResourceNotFound': 'ENVIRONMENT: Missing ROS2 package or sourcing error.',
     r'lookupTransform': 'TRANSFORM: TF2 Buffer lookup failure (check your robot_state_publisher).',
-    r'SEVERE WARNING!!! A namespace collision': 'NOISE: Duplicate plugin libraries (usually harmless, can ignore).'
+    r'SEVERE WARNING!!! A namespace collision': 'NOISE: Duplicate plugin libraries (usually harmless).'
 }
 
 class ROS2Debugger:
@@ -69,8 +69,8 @@ class ROS2Debugger:
 
         if self.possible_root_causes:
             print("\n[!] IDENTIFIED ROOT CAUSES:")
-            for cause in set(self.possible_root_causes): # Unique items
-                print(f"    - {cause}")
+            for i, cause in enumerate(set(self.possible_root_causes)): # Unique items
+                print(f"{i}   - {cause}\n")
         
         if self.exit_detected:
             print("\n[!] CRASH CONTEXT (Last lines before failure):")
@@ -85,9 +85,12 @@ class ROS2Debugger:
         print("="*60 + "\n")
 
 def read_output(proc, debugger):
+    last_line = ""
     for line in iter(proc.stdout.readline, ''):
-        print(line.strip())
+        last_line = line.strip()
+        print(f"\r{last_line}", end="", flush=True)
         debugger.analyze_line(line)
+    print()  # Final newline after the loop ends
 
 def main():
     if len(sys.argv) < 2:
