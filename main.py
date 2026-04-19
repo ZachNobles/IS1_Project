@@ -20,12 +20,30 @@ COMPLETION_PATTERNS = [
 
 # Known error patterns and what they usually mean
 ROOT_CAUSE_MAP = {
-    r'uvc_find_device: No such device': 'HARDWARE: Camera USB connection failed or permissions issue.',
     r'exit code -11': 'CRASH: Segmentation Fault (Memory corruption or driver incompatibility).',
     r'exit code -6': 'CRASH: Abort signal (likely an assertion failure).',
     r'ResourceNotFound': 'ENVIRONMENT: Missing ROS2 package or sourcing error.',
     r'lookupTransform': 'TRANSFORM: TF2 Buffer lookup failure (check your robot_state_publisher).',
-    r'SEVERE WARNING!!! A namespace collision': 'NOISE: Duplicate plugin libraries (usually harmless).'
+    
+    # Networking & DDS
+    r'incompatible QoS': 'COMMUNICATION: Publisher and Subscriber have mismatched Quality of Service settings.',
+    r'RTPS_READER.*matched': 'DDS: Discovery issue. Nodes see each other but cannot handshake.',
+    r'multicast_join': 'NETWORK: DDS cannot join multicast group. Check firewall/VPN/Network Interface.',
+
+    # Hardware & Permissions
+    r'uvc_find_device: No such device': 'HARDWARE: Camera USB connection failed or permissions issue.',
+    r'Permission denied.*ttyUSB': 'PERMISSIONS: Cannot access Serial port. Run: sudo usermod -a -G dialout $USER',
+    r'could not open port': 'HARDWARE: Controller/Sensor unplugged or wrong /dev/ port specified.',
+    r'out of memory.*buffer': 'USB: Bus bandwidth exceeded. Lower the camera resolution or FPS.',
+
+    # Lifecycle & Logic
+    r'taking too long to execute': 'PERFORMANCE: Callback hung or loop rate too high for CPU.',
+    r'use_sim_time': 'CLOCK: Potential mismatch between real-time and simulation-time.',
+    r'cannot create a publisher on topic': 'NAMING: Invalid topic name (check for illegal characters or double slashes).',
+
+    # Noise (To be filtered out)
+    r'Optimization Guide': 'NOISE: Standard library optimization suggestion.',
+    r'deprecated': 'NOISE: Using old API calls; usually not the cause of a crash.'
 }
 
 class ROS2Debugger:
@@ -63,17 +81,17 @@ class ROS2Debugger:
             self.exit_detected = True
 
     def print_report(self, timed_out, return_code):
-        print("\n" + "="*60)
+        print("\n\e36m" + "="*60)
         print("DIAGNOSTIC SUMMARY")
-        print("="*60)
+        print("="*60 + "\e0m")
 
         if self.possible_root_causes:
-            print("\n[!] IDENTIFIED ROOT CAUSES:")
+            print("\n\e32m[!] IDENTIFIED ROOT CAUSES:\e0m")
             for i, cause in enumerate(set(self.possible_root_causes)): # Unique items
                 print(f"{i+1}   - {cause}\n")
         
         if self.exit_detected:
-            print("\n[!] CRASH CONTEXT (Last lines before failure):")
+            print("\n\e31m[!] CRASH CONTEXT (Last lines before failure):\e0m")
             for l in self.output_history:
                 print(f"    >>> {l}")
 
