@@ -146,7 +146,6 @@ def read_output(proc, debugger, last_output_time_ref):
         print(f"\r{padded_line}", end="", flush=True)
         debugger.analyze_line(line)
         last_output_time_ref[0] = time.time()  # Update last output time
-    print()  # Final newline after the loop ends
 
 def main():
     if len(sys.argv) < 2:
@@ -186,8 +185,8 @@ def main():
                 current_timer = ""
             
             # Print timer on its own line if it changed
-            if current_timer != last_printed_timer:
-                print(f"\n{current_timer}")
+            if current_timer and current_timer != last_printed_timer:
+                print(current_timer)
                 last_printed_timer = current_timer
             
             if remaining <= 0:
