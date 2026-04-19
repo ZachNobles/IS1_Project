@@ -3,6 +3,25 @@
 import sys
 import subprocess
 import re
+import time
+
+# Configuration
+TIMEOUT_SECONDS = 30  # No output for this long = possible loop/stuck
+
+# ROS2 completion patterns
+COMPLETION_PATTERNS = [
+    r'Exiting',
+    r'Shutting down',
+    r'Done',
+    r'process has finished',
+    r'Respawning',
+    r'KeyboardInterrupt',
+    r'Shutting down completed',
+]
+
+def is_completion(line):
+    """Check if line indicates normal completion."""
+    return any(re.search(p, line, re.IGNORECASE) for p in COMPLETION_PATTERNS)
 
 def main():
     if len(sys.argv) < 2:
@@ -19,13 +38,29 @@ def main():
     output_lines = []
     errors = []
     warnings = []
+    last_output_time = time.time()
+    timed_out = False
 
     while True:
         line = proc.stdout.readline()
+        
+        # Check for timeout (no output for TIMEOUT_SECONDS)
+        current_time = time.time()
+        if current_time - last_output_time > TIMEOUT_SECONDS:
+            print(f"\n[WARNING] No output for {TIMEOUT_SECONDS} seconds - possible loop or stuck process")
+            timed_out = True
+            break
+        
         if not line:
             break
+        
+        last_output_time = current_time
         output_lines.append(line.strip())
         print(line.strip())  # Print in real-time
+
+        # Check for completion
+        if is_completion(line):
+            print(f"\n[INFO] Detected completion signal: {line.strip()}")
 
         # common ROS2 issues
         if re.search(r'\bERROR\b', line, re.IGNORECASE):
@@ -44,6 +79,12 @@ def main():
     print("Debug report")
     print("="*50)
 
+    if timed_out:
+        print(f"\n[RESULT] Process timed out after {TIMEOUT_SECONDS}s with no output")
+        print("  Possible causes: infinite loop, deadlock, or waiting for input")
+    else:
+        print(f"\n[RESULT] Process completed normally")
+
     if errors:
         print(f"\nFound {len(errors)} errors:")
         for error in errors:
@@ -58,7 +99,8 @@ def main():
     else:
         print("\nNo warnings detected.")
 
-    print(f"\nCommand exited with code: {proc.returncode}")
+    if not timed_out:
+        print(f"\nCommand exited with code: {proc.returncode}")
 
 if __name__ == "__main__":
     main()
