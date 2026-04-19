@@ -18,6 +18,7 @@ GREEN = "\033[32m"
 CYAN = "\033[36m"
 BLUE = "\033[34m"
 PURPLE = "\033[35m"
+BOLD = "\033[1;37m"
 RESET = "\033[0m"
 
 # Patterns that indicate the node/launcher is finished
@@ -100,11 +101,11 @@ class ROS2Debugger:
                     header = line[:start_marker]
                     footer = line[end_marker:]
                     count = line.count('--params-file')
-                    return f"{header} {BLUE}... [TRUNCATED {count} PARAMS] ...{RESET} {footer}"
+                    return f"{header} {BOLD}... [TRUNCATED {count} PARAMS] ...{RESET} {footer}"
             except Exception:
                 pass # Fall back to basic truncation if logic fails
                 
-            return line[:150] + f" {BLUE}... [TRUNCATED SOME PARAMS] ...{RESET}"
+            return line[:150] + f" {BOLD}... [TRUNCATED SOME PARAMS] ...{RESET}"
             
         return line
 
@@ -178,11 +179,11 @@ def main():
             remaining = int(TIMEOUT_SECONDS - elapsed)
             
             if remaining <= (TIMEOUT_SECONDS - 5) and remaining != last_displayed_second and remaining >= 0:
-                print(f"\rtiming out in {remaining} seconds", end="", flush=True)
+                print(f"timing out in {remaining} seconds")
                 last_displayed_second = remaining
             
             if remaining <= 0:
-                print("\nTimeout reached. Terminating process.")
+                print("Timeout reached. Terminating process.")
                 proc.terminate()
                 timed_out = True
                 break
