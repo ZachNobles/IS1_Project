@@ -11,6 +11,7 @@ from collections import deque
 # Configuration
 TIMEOUT_SECONDS = 20
 CONTEXT_SIZE = 10  # Number of lines to keep before a crash
+CYAN = "\033[36m"
 
 # Patterns that indicate the node/launcher is finished
 COMPLETION_PATTERNS = [
@@ -81,24 +82,24 @@ class ROS2Debugger:
             self.exit_detected = True
 
     def print_report(self, timed_out, return_code):
-        print("\n\e[36m" + "="*60)
+        print(f"\n{CYAN}" + "="*60)
         print("DIAGNOSTIC SUMMARY")
-        print("="*60 + "\e[0m")
+        print("="*60 + "\033[0m")
 
         if self.possible_root_causes:
-            print("\n\e[32m[!] IDENTIFIED ROOT CAUSES:\e[0m")
+            print("\n\033[32m[!] IDENTIFIED ROOT CAUSES:\033[0m")
             for i, cause in enumerate(set(self.possible_root_causes)): # Unique items
                 print(f"{i+1}   - {cause}\n")
         
         if self.exit_detected:
-            print("\n\e[31m[!] CRASH CONTEXT (Last lines before failure):\e[0m")
+            print("\n\033[31m[!] CRASH CONTEXT (Last lines before failure):\033[0m")
             for l in self.output_history:
                 print(f"    >>> {l}")
 
         print(f"\n[STDOUT/STDERR] Errors: {len(self.errors)} | Warnings: {len(self.warnings)}")
         
         if timed_out:
-            print("\n\e[33m[!] TIMEOUT: Process was terminated after inactivity.\e[0m")
+            print("\n\033[33m[!] TIMEOUT: Process was terminated after inactivity.\033[0m")
         
         if return_code != 0 and return_code is not None:
             print(f"Launcher exited with code: {return_code}")
