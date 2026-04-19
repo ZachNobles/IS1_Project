@@ -97,6 +97,9 @@ class ROS2Debugger:
 
         print(f"\n[STDOUT/STDERR] Errors: {len(self.errors)} | Warnings: {len(self.warnings)}")
         
+        if timed_out:
+            print("\n\e[33m[!] TIMEOUT: Process was terminated after inactivity.\e[0m")
+        
         if return_code != 0 and return_code is not None:
             print(f"Launcher exited with code: {return_code}")
         
@@ -139,6 +142,7 @@ def main():
     thread.start()
 
     last_displayed_second = -1
+    timed_out = False
     
     try:
         while proc.poll() is None:
@@ -149,12 +153,18 @@ def main():
                 print(f"\rtiming out in {remaining} seconds", end="", flush=True)
                 last_displayed_second = remaining
             
+            if remaining <= 0:
+                print("\nTimeout reached. Terminating process.")
+                proc.terminate()
+                timed_out = True
+                break
+            
             time.sleep(0.5)
     except KeyboardInterrupt:
         proc.terminate()
 
     proc.wait()
-    debugger.print_report(False, proc.returncode)
+    debugger.print_report(timed_out, proc.returncode)
 
 if __name__ == "__main__":
     main()
