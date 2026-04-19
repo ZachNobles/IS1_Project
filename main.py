@@ -184,13 +184,14 @@ def main():
             else:
                 current_timer = ""
             
-            # Print timer on its own line if it changed
-            if current_timer and current_timer != last_printed_timer:
-                print(current_timer)
+            # Print timer on line 2, then move cursor back up for next update
+            if current_timer:
+                print(f"\n{current_timer}\033[1A\r", end="", flush=True)
                 last_printed_timer = current_timer
             
             if remaining <= 0:
-                print("\nTimeout reached. Terminating process.")
+                print()  # Move to new line after timeout
+                print("Timeout reached. Terminating process.")
                 proc.terminate()
                 timed_out = True
                 break
